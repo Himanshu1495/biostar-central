@@ -68,12 +68,19 @@ def perform_vote(post, user, vote_type):
         vote = Vote.objects.create(author=user, post=post, type=vote_type)
         msg = "%s added" % vote.get_type_display()
 
-    if post.author != user:
+    if post.author != user and change < 0:
+        # Update the user reputation only if the author is different.
+        User.objects.filter(pk=post.author.id).update(score=F('score') - change)
+
+    # The thread score represents all votes in a thread
+        Post.objects.filter(pk=post.root_id).update(thread_score=F('thread_score') - change)
+    else:
         # Update the user reputation only if the author is different.
         User.objects.filter(pk=post.author.id).update(score=F('score') + change)
 
     # The thread score represents all votes in a thread
-    Post.objects.filter(pk=post.root_id).update(thread_score=F('thread_score') + change)
+        Post.objects.filter(pk=post.root_id).update(thread_score=F('thread_score') + change)
+            
 
     if vote.type == Vote.BOOKMARK:
         # Apply the vote
